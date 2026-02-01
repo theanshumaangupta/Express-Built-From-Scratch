@@ -6,7 +6,10 @@ app.get("/", (req, res) => {
   res.fileBhejo("index.html", "text/html");
 });
 app.get("/user", (req, res) => {
-  res.fileBhejo("index.html", "text/html");
+  if(req.query){
+    console.log(req.query);
+  }
+  res.sandesh("User Page");
 });
 
 app.get("/user/:id", (req, res) => {

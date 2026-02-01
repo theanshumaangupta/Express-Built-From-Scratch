@@ -9,7 +9,7 @@ This project is meant for learning and experimentation, not for production use.
 
 ## Features
 
-- Create an application using `express()`
+- Create an application using `myexpress.js` file
 - Handle GET routes
 - Support for static routes
 - Support for dynamic routes with URL parameters (`/user/:id`)
@@ -22,6 +22,6 @@ This project is meant for learning and experimentation, not for production use.
 Clone the repository and move into the project directory:
 
 ```bash
-git clone <your-repo-url>
-cd <repo-folder>
+git clone <url>
+cd <folder>
 node server.js

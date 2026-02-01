@@ -27,6 +27,19 @@ function express() {
                     }
 
                 }
+                if (hreq.url.includes("?")) {
+                    const clientQueryChunks = hreq.url.split("?")
+                    let queryObject = {}
+
+                    const singleQuery = clientQueryChunks[1].split("&")
+                    singleQuery.forEach(query => {
+                        let a = query.split("=")
+                        queryObject[a[0]] = a[1]
+                    });
+                    req.query = queryObject
+                    hreq.url = clientQueryChunks[0]
+                }
+
                 // checking static urls 
                 if (this.routes[hreq.url]) {
                     this.routes[hreq.url].handler(req, res)
@@ -47,9 +60,9 @@ function express() {
                             const routeChunks = route.split("/")
                             // route = "/user/:id"
                             // routeChunks = ["", "user", ":id"] 
+                            let found = true
                             if (routeChunks.length == clientChunks.length) {
                                 let params = {}
-                                let found = true
                                 for (let index = 0; index < routeChunks.length; index++) {
                                     const segment = routeChunks[index];
                                     if (segment.includes(":")) {
