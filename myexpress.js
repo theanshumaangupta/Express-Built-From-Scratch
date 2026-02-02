@@ -1,16 +1,32 @@
 import http from "http"
 import fs from "fs"
+import { strict } from "assert"
 function express() {
     let routeObject = {}
+    let middlewareObject = {}
     function render(req, res) {
         routeObject[req.url].handler(req, res)
     }
+
     function renderMiddleware(req, res) {
-        if (routeObject[req.url].middleware) {
-            let newReqRes = routeObject[req.url].middleware({ req: req, res: res })
-            req = newReqRes.req
-            res = newReqRes.res
+        let functionChain = []
+        let currIndex = 1
+        function next() {
+            if (functionChain.length > currIndex ) {
+                currIndex+=1
+                functionChain[currIndex-1](req, res, next)
+            }
         }
+        Object.keys(middlewareObject).forEach((route) => {
+            // collecting all middlewares into fn chain
+            if (req.url === route || req.url.startsWith(route + "/") || route=="*" ) {
+                functionChain = [...functionChain, ...middlewareObject[route]]
+            }
+        })
+        functionChain.length>0 && functionChain[0](req, res, next)
+        // functionChain.length > 0 && functionChain.forEach((fn) => {
+        //    fn(req, res, next)
+        // })
         render(req, res)
     }
     const app = {
@@ -21,13 +37,24 @@ function express() {
             }
             routeObject[path] = obj
         },
-        use(path, middleware) {
-            Object.keys(routeObject).forEach((route) => {
-                if (route.includes(`${path}/`)) {
-                    routeObject[route].middleware = middleware
-                }
-            })
-            routeObject[path].middleware = middleware
+        use(arg1, arg2="*") {
+            let path, middleware
+            if(typeof(arg1)=="function"){
+                path = "*"
+                middleware = arg1
+            }else if(typeof(arg1) == "string" && typeof(arg2) == "function"){
+                path = arg1
+                middleware = arg2
+            }
+            if (middlewareObject[path]) {
+                middlewareObject[path] = [...middlewareObject[path], middleware]
+
+            }
+            else {
+                let existing = { ...middlewareObject }
+                existing[path] = [middleware]
+                middlewareObject = existing
+            }
         },
         listen(port, fn) {
             fn()
