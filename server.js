@@ -26,6 +26,11 @@ app.get("/user/45", (req, res) => {
   res.sandesh(`Static`)
 });
 
+app.use("/user", (reqResObject)=>{
+  reqResObject.req.url = "/"
+  return (reqResObject) 
+  
+})
 
 
 app.listen(3000, () => {
