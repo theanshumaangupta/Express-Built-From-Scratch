@@ -6,9 +6,7 @@ app.get("/", (req, res) => {
   res.fileBhejo("index.html", "text/html");
 });
 app.get("/user", (req, res) => {
-  if(req.query){
-    console.log(req.query);
-  }
+  console.log("Hello i am rendering");
   res.sandesh("User Page");
 });
 

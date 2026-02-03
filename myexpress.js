@@ -12,22 +12,22 @@ function express() {
         let functionChain = []
         let currIndex = 1
         function next() {
-            if (functionChain.length > currIndex ) {
-                currIndex+=1
-                functionChain[currIndex-1](req, res, next)
+            if (functionChain.length > currIndex) {
+                currIndex += 1
+                functionChain[currIndex - 1](req, res, next)
+            }
+            else if(functionChain.length == currIndex){
+                render(req, res)
             }
         }
         Object.keys(middlewareObject).forEach((route) => {
             // collecting all middlewares into fn chain
-            if (req.url === route || req.url.startsWith(route + "/") || route=="*" ) {
+            if (req.url === route || req.url.startsWith(route + "/") || route == "*") {
                 functionChain = [...functionChain, ...middlewareObject[route]]
             }
         })
-        functionChain.length>0 && functionChain[0](req, res, next)
-        // functionChain.length > 0 && functionChain.forEach((fn) => {
-        //    fn(req, res, next)
-        // })
-        render(req, res)
+        functionChain.length > 0 && functionChain[0](req, res, next)
+
     }
     const app = {
 
@@ -37,12 +37,12 @@ function express() {
             }
             routeObject[path] = obj
         },
-        use(arg1, arg2="*") {
+        use(arg1, arg2 = "*") {
             let path, middleware
-            if(typeof(arg1)=="function"){
+            if (typeof (arg1) == "function") {
                 path = "*"
                 middleware = arg1
-            }else if(typeof(arg1) == "string" && typeof(arg2) == "function"){
+            } else if (typeof (arg1) == "string" && typeof (arg2) == "function") {
                 path = arg1
                 middleware = arg2
             }
