@@ -11,12 +11,13 @@ function express() {
     function renderMiddleware(req, res) {
         let functionChain = []
         let currIndex = 1
+        // Continuing the chain f middlewares
         function next() {
-            if (functionChain.length > currIndex) {
+            if (currIndex < functionChain.length) {
                 currIndex += 1
                 functionChain[currIndex - 1](req, res, next)
             }
-            else if(functionChain.length == currIndex){
+            else if (currIndex == functionChain.length) {
                 render(req, res)
             }
         }
@@ -26,34 +27,39 @@ function express() {
                 functionChain = [...functionChain, ...middlewareObject[route]]
             }
         })
+        // Running the first middleware and starting the chain
         functionChain.length > 0 && functionChain[0](req, res, next)
-
     }
     const app = {
-
         get(path, handler) {
             let obj = {
                 "handler": handler,
             }
             routeObject[path] = obj
         },
-        use(arg1, arg2 = "*") {
-            let path, middleware
-            if (typeof (arg1) == "function") {
-                path = "*"
-                middleware = arg1
-            } else if (typeof (arg1) == "string" && typeof (arg2) == "function") {
-                path = arg1
-                middleware = arg2
+        use(...args) {
+            if (args.length == 0) {
+                throw new Error ("Bhkk Bosdike")
             }
-            if (middlewareObject[path]) {
-                middlewareObject[path] = [...middlewareObject[path], middleware]
+            let path, middlewareArray
+            if (typeof (args[0]) != "string") {
+                path = "*"
+                middlewareArray = args
 
+            } else if(typeof args[0] == "string" && args.length > 1){
+                path = args[0]
+                middlewareArray = args.slice(1, args.length)
+            }else{
+                console.log(args);
+            }
+
+
+            if (middlewareObject[path]) {
+                middlewareObject[path] = [...middlewareObject[path], ...middlewareArray]
             }
             else {
-                let existing = { ...middlewareObject }
-                existing[path] = [middleware]
-                middlewareObject = existing
+                middlewareObject[path] = [...middlewareArray]
+
             }
         },
         listen(port, fn) {
@@ -138,12 +144,9 @@ function express() {
                                     return
                                 }
                             }
-
                         }
-
                     }
                 }
-
             })
             server.listen(port)
         }

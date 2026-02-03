@@ -20,20 +20,26 @@ app.get("/user/:id/post/:no", (req, res) => {
   res.sandesh(`Your parameter value is ${req.params.id} and post is ${req.params.no}`)
 });
 
-app.use( (req, res, next)=>{
+app.use((req, res, next) => {
 
   console.log("we used universal middleware");
   next()
   console.log("after we univ used middleware");
-  
+
 })
 
-app.use("/user", (req, res, next)=>{
+app.use("/user", (req, res, next) => {
 
   console.log("we used middleware");
   next()
   console.log("after we used middleware");
-  
+
+}, (req, res, next) => {
+
+  console.log("we used middleware 2");
+  next()
+  console.log("after we used middleware 2");
+
 })
 
 
