@@ -5,7 +5,8 @@ function express() {
     let routeObject = {}
     let middlewareObject = {}
     function render(req, res) {
-        routeObject[req.modifiedUrl].handler(req, res)
+        let method = req.method
+        routeObject[req.modifiedUrl][method].handler(req, res)
     }
     function renderMiddleware(req, res) {
         let functionChain = []
@@ -29,17 +30,27 @@ function express() {
         // Running the first middleware and starting the chain
         if (functionChain.length == 0) {
             render(req, res)
-        }else{
+        } else {
             functionChain[0](req, res, next)
         }
-        
+
     }
     const app = {
         get(path, handler) {
             let obj = {
-                "handler": handler,
+                "GET": {
+                    "handler": handler,
+                }
             }
             routeObject[path] = obj
+        },
+        post(path, handler) {
+            let obj = {
+                "POST": {
+                    "handler": handler,
+                }
+            }
+            routeObject[path] = { ...routeObject[path], ...obj }
         },
         use(...args) {
             assert(args.length > 0, "0 Parameters given in app.use(^)")
@@ -67,6 +78,67 @@ function express() {
         listen(port, fn) {
             fn()
             const server = http.createServer((hreq, hres) => {
+                let modifiedUrl = hreq.url
+                function routeModification() {
+
+                    if (hreq.url.includes("?")) {
+                        const clientQueryChunks = hreq.url.split("?")
+                        let queryObject = {}
+                        // For query variable ?a=8&b=0
+                        const singleQuery = clientQueryChunks[1].split("&")
+                        singleQuery.forEach(query => {
+                            let a = query.split("=")
+                            queryObject[a[0]] = a[1]
+                        });
+                        req.query = queryObject
+                        modifiedUrl = clientQueryChunks[0]
+                    }
+                    if (routeObject[modifiedUrl]) {
+                        // Static Routes
+                        req.modifiedUrl = modifiedUrl
+                        renderMiddleware(req, res)
+                    }
+                    else {
+                        // For routes like /:id
+                        let clientChunks = hreq.url.split("/")
+                        let routesArray = Array.from(Object.keys(routeObject))
+                        for (let index = 0; index < routesArray.length; index++) {
+                            const route = routesArray[index];
+                            if (route.includes(":")) {
+                                const routeChunks = route.split("/")
+                                // Ex - route = "/user/:id"
+                                // routeChunks = ["", "user", ":id"] 
+                                if (routeChunks.length == clientChunks.length) {
+                                    let found = true
+                                    let params = {}
+                                    for (let index = 0; index < routeChunks.length; index++) {
+                                        const segment = routeChunks[index];
+                                        if (segment.includes(":")) {
+                                            params[(routeChunks[index]).replace(":", "")] = clientChunks[index]
+                                            found = true
+                                            continue
+                                        }
+                                        else {
+                                            if (routeChunks[index] != clientChunks[index]) {
+                                                params = {}
+                                                found = false
+                                                break
+                                            }
+                                        }
+
+                                    }
+                                    if (found) {
+                                        req.params = params
+                                        // routeObject[route].handler(req, res)
+                                        req.modifiedUrl = route
+                                        renderMiddleware(req, res)
+                                        return
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 // Request 
                 let req = {
                     url: hreq.url,
@@ -76,7 +148,6 @@ function express() {
                     ip: hreq.socket.remoteAddress,
                     raw: hreq   // reference to original node request
                 }
-
                 // Response
                 let res = {
                     sandesh: function (message) {
@@ -90,65 +161,23 @@ function express() {
                     }
                 }
 
-
-                let modifiedUrl = hreq.url
-                if (hreq.url.includes("?")) {
-                    const clientQueryChunks = hreq.url.split("?")
-                    let queryObject = {}
-                    // For query variable ?a=8&b=0
-                    const singleQuery = clientQueryChunks[1].split("&")
-                    singleQuery.forEach(query => {
-                        let a = query.split("=")
-                        queryObject[a[0]] = a[1]
+                if (hreq.method == "POST") {
+                    // Collecting body data
+                    let body = "";
+                    hreq.on("data", chunk => {
+                        body += chunk;
                     });
-                    req.query = queryObject
-                    modifiedUrl = clientQueryChunks[0]
+                    hreq.on("end", () => {
+                        req.body = body
+                        routeModification()
+                        hres.end("received");
+                    });
                 }
-                if (routeObject[modifiedUrl]) {
-                    // Static Routes
-                    req.modifiedUrl = modifiedUrl
-                    renderMiddleware(req, res)
+                if (hreq.method == "GET") {
+                    routeModification()
                 }
-                else {
-                    // For routes like /:id
-                    let clientChunks = hreq.url.split("/")
-                    let routesArray = Array.from(Object.keys(routeObject))
-                    for (let index = 0; index < routesArray.length; index++) {
-                        const route = routesArray[index];
-                        if (route.includes(":")) {
-                            const routeChunks = route.split("/")
-                            // Ex - route = "/user/:id"
-                            // routeChunks = ["", "user", ":id"] 
-                            if (routeChunks.length == clientChunks.length) {
-                                let found = true
-                                let params = {}
-                                for (let index = 0; index < routeChunks.length; index++) {
-                                    const segment = routeChunks[index];
-                                    if (segment.includes(":")) {
-                                        params[(routeChunks[index]).replace(":", "")] = clientChunks[index]
-                                        found = true
-                                        continue
-                                    }
-                                    else {
-                                        if (routeChunks[index] != clientChunks[index]) {
-                                            params = {}
-                                            found = false
-                                            break
-                                        }
-                                    }
 
-                                }
-                                if (found) {
-                                    req.params = params
-                                    // routeObject[route].handler(req, res)
-                                    req.modifiedUrl = route
-                                    renderMiddleware(req, res)
-                                    return
-                                }
-                            }
-                        }
-                    }
-                }
+
 
             })
             server.listen(port)

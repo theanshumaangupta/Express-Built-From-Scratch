@@ -5,6 +5,9 @@ const app = express();
 app.get("/", (req, res) => {
   res.fileBhejo("index.html", "text/html");
 });
+app.post("/", (req, res) => {
+  console.log("the body is", req.body);
+});
 app.get("/user", (req, res) => {
   console.log("Hello i am rendering");
   res.sandesh("User Page");
