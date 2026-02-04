@@ -5,17 +5,17 @@ The purpose of this project is to understand how routing and request handling wo
 
 This project is meant for learning and experimentation, not for production use.
 
----
+-
 
 ## Features
 
 - Create an application using `myexpress.js` file
-- Handle GET routes
-- Support for static routes
-- Support for dynamic routes with URL parameters (`/user/:id`)
+- Handle GET, POST routes
+- Support for static and dynamic routes with URL parameters (`/user/:id`) 
+- Support middlewares and chaining of mw with next()
 - Simple response helpers for sending text and files
 
----
+
 
 ## Installation
 
