@@ -1,13 +1,12 @@
 import http from "http"
 import fs from "fs"
-import { strict } from "assert"
+import assert from "assert"
 function express() {
     let routeObject = {}
     let middlewareObject = {}
     function render(req, res) {
-        routeObject[req.url].handler(req, res)
+        routeObject[req.modifiedUrl].handler(req, res)
     }
-
     function renderMiddleware(req, res) {
         let functionChain = []
         let currIndex = 1
@@ -23,12 +22,17 @@ function express() {
         }
         Object.keys(middlewareObject).forEach((route) => {
             // collecting all middlewares into fn chain
-            if (req.url === route || req.url.startsWith(route + "/") || route == "*") {
+            if (req.modifiedUrl === route || req.modifiedUrl.startsWith(route + "/") || route == "*") {
                 functionChain = [...functionChain, ...middlewareObject[route]]
             }
         })
         // Running the first middleware and starting the chain
-        functionChain.length > 0 && functionChain[0](req, res, next)
+        if (functionChain.length == 0) {
+            render(req, res)
+        }else{
+            functionChain[0](req, res, next)
+        }
+        
     }
     const app = {
         get(path, handler) {
@@ -38,22 +42,20 @@ function express() {
             routeObject[path] = obj
         },
         use(...args) {
-            if (args.length == 0) {
-                throw new Error ("Bhkk Bosdike")
-            }
+            assert(args.length > 0, "0 Parameters given in app.use(^)")
             let path, middlewareArray
             if (typeof (args[0]) != "string") {
                 path = "*"
                 middlewareArray = args
 
-            } else if(typeof args[0] == "string" && args.length > 1){
+            } else if (typeof args[0] == "string" && args.length > 1) {
                 path = args[0]
                 middlewareArray = args.slice(1, args.length)
-            }else{
-                console.log(args);
+            } else {
+                throw new Error("Something unusal happened with parameters in app.use()");
             }
 
-
+            // Registering the middleware
             if (middlewareObject[path]) {
                 middlewareObject[path] = [...middlewareObject[path], ...middlewareArray]
             }
@@ -89,7 +91,7 @@ function express() {
                 }
 
 
-
+                let modifiedUrl = hreq.url
                 if (hreq.url.includes("?")) {
                     const clientQueryChunks = hreq.url.split("?")
                     let queryObject = {}
@@ -100,11 +102,11 @@ function express() {
                         queryObject[a[0]] = a[1]
                     });
                     req.query = queryObject
-                    hreq.url = clientQueryChunks[0]
+                    modifiedUrl = clientQueryChunks[0]
                 }
-                if (routeObject[hreq.url]) {
+                if (routeObject[modifiedUrl]) {
                     // Static Routes
-                    req.url = hreq.url
+                    req.modifiedUrl = modifiedUrl
                     renderMiddleware(req, res)
                 }
                 else {
@@ -139,7 +141,7 @@ function express() {
                                 if (found) {
                                     req.params = params
                                     // routeObject[route].handler(req, res)
-                                    req.url = route
+                                    req.modifiedUrl = route
                                     renderMiddleware(req, res)
                                     return
                                 }
@@ -147,6 +149,7 @@ function express() {
                         }
                     }
                 }
+
             })
             server.listen(port)
         }
