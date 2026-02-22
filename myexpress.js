@@ -1,7 +1,8 @@
-import http from "http"
-import fs from "fs"
-import assert from "assert"
-function express() {
+const  http = require("http")
+const  fs = require("fs")
+const  assert = require("assert")
+
+function myExpress() {
     let routeObject = {}
     let middlewareObject = {}
     function render(req, res) {
@@ -185,4 +186,4 @@ function express() {
     }
     return app;
 }
-export default express;
+module.exports = myExpress;
