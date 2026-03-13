@@ -5,7 +5,6 @@ The purpose of this project is to understand how routing and request handling wo
 
 This project is meant for learning and experimentation, not for production use.
 
--
 
 ## Features
 
